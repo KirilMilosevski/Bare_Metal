@@ -11,15 +11,19 @@ install_docker() {
     gnupg \
     lsb-release
 
+  # Ensure the directory exists
   mkdir -p /etc/apt/keyrings
-  curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
 
-  echo \
-    "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
-    $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+# Download and store the GPG key
+  curl -fsSL --insecure https://download.docker.com/linux/ubuntu/gpg | \
+  gpg --dearmor --batch --yes -o /etc/apt/keyrings/docker.gpg
+
+  echo "Acquire::https::download.docker.com::Verify-Peer \"false\";" > /etc/apt/apt.conf.d/99insecure
+  echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu focal stable" > /etc/apt/sources.list.d/docker.list
 
   apt-get update
   apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+  usermod -aG docker vagrant
 
   systemctl enable docker
   systemctl start docker
